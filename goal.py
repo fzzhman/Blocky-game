@@ -1,30 +1,3 @@
-"""CSC148 Assignment 2
-
-=== CSC148 Winter 2020 ===
-Department of Computer Science,
-University of Toronto
-
-This code is provided solely for the personal and private use of
-students taking the CSC148 course at the University of Toronto.
-Copying for purposes other than this use is expressly prohibited.
-All forms of distribution of this code, whether as given or with
-any changes, are expressly prohibited.
-
-Authors: Diane Horton, David Liu, Mario Badr, Sophia Huynh, Misha Schwartz,
-and Jaisie Sin
-
-All of the files in this directory and all subdirectories are:
-Copyright (c) Diane Horton, David Liu, Mario Badr, Sophia Huynh,
-Misha Schwartz, and Jaisie Sin
-
-=== Module Description ===
-
-This file contains the hierarchy of Goal classes.
-"""
-from __future__ import annotations
-import math
-import random
-from typing import List, Tuple
 from block import Block
 from settings import colour_name, COLOUR_LIST
 
@@ -39,19 +12,8 @@ def generate_goals(num_goals: int) -> List[Goal]:
     Precondition:
         - num_goals <= len(COLOUR_LIST)
     """
-    final = []
-    goals = [PerimeterGoal, BlobGoal]
-    x = random.choice(goals)
-    if x == PerimeterGoal:
-        for i in range(num_goals):
-            colours = random.choice(COLOUR_LIST)
-            final.append(PerimeterGoal(colours))
-
-    else:
-        for i in range(num_goals):
-            colours = random.choice(COLOUR_LIST)
-            final.append(BlobGoal(colours))
-    return final
+    # TODO: Implement Me
+    return [PerimeterGoal(COLOUR_LIST[0])]  # FIXME
 
 
 def _flatten(block: Block) -> List[List[Tuple[int, int, int]]]:
@@ -68,12 +30,17 @@ def _flatten(block: Block) -> List[List[Tuple[int, int, int]]]:
 
     L[0][0] represents the unit cell in the upper left corner of the Block.
     """
-    nested = []
-    for i in range(block.max_depth):
-        for j in range(2**(block.max_depth - block.level)):
-            nested.append([block.colour])
+    lst = []
+    if block.children is []:
+        return []
+    for child in block.children:
+        if child.children is []:
+            lst.append([child.colour])
+        else:
+            _flatten(child)
 
-    return nested
+    return lst
+
 
 class Goal:
     """A player goal in the game of Blocky.
@@ -107,16 +74,20 @@ class Goal:
 
 class PerimeterGoal(Goal):
     def score(self, board: Block) -> int:
-        pass
+        # TODO: Implement me
+        return 148
+
 
     def description(self) -> str:
         # TODO: Implement me
-        pass
+        return "The player must aim to put the most possible units of a given"\
+               "colour c on the outer perimeter of the board."
 
 
 class BlobGoal(Goal):
     def score(self, board: Block) -> int:
-        return Goal.score()
+        # TODO: Implement me
+        return 148  # FIXME
 
     def _undiscovered_blob_size(self, pos: Tuple[int, int],
                                 board: List[List[Tuple[int, int, int]]],
@@ -143,7 +114,7 @@ class BlobGoal(Goal):
 
     def description(self) -> str:
         # TODO: Implement me
-        return 'DESCRIPTION'  # FIXME
+        return 'The player must aim for the largest “blob” of a given colour c.'
 
 
 if __name__ == '__main__':
@@ -155,3 +126,4 @@ if __name__ == '__main__':
         ],
         'max-attributes': 15
     })
+

@@ -196,7 +196,6 @@ class Block:
                 for pos in self._children_positions():
                     child._update_children_positions(pos)
 
-
     def smashable(self) -> bool:
         """Return True iff this block can be smashed.
 
@@ -238,19 +237,16 @@ class Block:
 
         Precondition: <direction> is either 0 or 1
         """
-        if len(self.children) == 0:
+        positions = self._children_positions()
+        if self.children is []:
             pass
-        elif direction == 1:
-            self.children[0].position, self.children[3].position = \
-                self.children[3].position, self.children[0].position
-            self.children[1].position, self.children[2].position = \
-                self.children[2].position, self.children[1].position
+        elif direction == 1 :
+            positions[0], positions[3] = positions[3], positions[0]
+            positions[1], positions[2] = positions[2], positions[1]
             return True
         else:
-            self.children[0].position, self.children[1].position = \
-                self.children[1].position, self.children[0].position
-            self.children[2].position, self.children[3].position = \
-                self.children[3].position, self.children[2].position
+            positions[0], positions[1] = positions[1], positions[0]
+            positions[2], positions[3] = positions[3], positions[2]
             return True
         return False
 
@@ -264,8 +260,30 @@ class Block:
 
         Precondition: <direction> is either 1 or 3.
         """
+        positions = self._children_positions()
+        if self.children is []:
+            pass
+        elif direction == 1:
+            for child in self.children:
+                if child.children is []:
+                    positions[0], positions[1], positions[2], positions[3] = \
+                        positions[3], positions[0], positions[1], positions[2]
+                    return True
+                else:
+                    child.rotate(1)
+                    return True
 
-        return True
+        elif direction == 3:
+            for child in self.children:
+                if child.children is []:
+                    positions[0], positions[1], positions[2], positions[3] = \
+                        positions[1], positions[2], positions[3], positions[0]
+                    return True
+                else:
+                    child.rotate(3)
+                    return True
+
+        return False
 
     def paint(self, colour: Tuple[int, int, int]) -> bool:
         """Change this Block's colour iff it is a leaf at a level of max_depth
@@ -274,10 +292,11 @@ class Block:
         Return True iff this Block's colour was changed.
         """
 
-        if self.max_depth == self.level:
+        if self.smashable() is False:
             if self.colour != colour:
                 self.colour = colour
                 return True
+
         return False
 
     def combine(self) -> bool:
@@ -361,5 +380,3 @@ if __name__ == '__main__':
     b2 = generate_board(3, 750)
     print("\n=== random board ===")
     print(b2)
-
-   

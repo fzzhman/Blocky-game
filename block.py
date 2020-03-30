@@ -26,8 +26,8 @@ from typing import Optional, Tuple, List
 import random
 import math
 
-import settings
 from settings import colour_name, COLOUR_LIST
+
 
 def generate_board(max_depth: int, size: int) -> Block:
     """Return a new game board with a depth of <max_depth> and dimensions of
@@ -187,13 +187,14 @@ class Block:
         <position> is the (x, y) coordinates of the upper-left corner of this
         Block.
         """
-
-        self.position = position
-        x = position[0]
-        y = position[1]
-        for child in self.children:
-            child.position = [(x + child.size, y), (x, y), (x, y+child.size),
-                                  (x+child.size, y+child.size)]
+        if self.max_depth == 0:
+            pass
+        elif self.children is []:
+            self.position = position
+        else:
+            for child in self.children:
+                for pos in self._children_positions():
+                    child._update_children_positions(pos)
 
 
     def smashable(self) -> bool:
@@ -213,21 +214,18 @@ class Block:
 
         Return True iff the smash was performed.
         """
-        if self.level == self.max_depth and self.children is not []:
+        if self.smashable() is False:
             pass
-        num = random.randrange(0, 1)
-        if num < math.exp(-0.25*self.level):
-            new = []
-            for i in range(2**self.max_depth):
-                pos = Tuple[random.randrange(0,1), random.randrange(0,1)]
-                size = random.randint(0, self.size)
-                color = random.choice(settings.COLOUR_LIST)
-                new.append(Block(pos, size, color, self.level+1,
-                                 self.max_depth+1))
-            self.children = new
-            return True
         else:
-            self.colour = random.choice(settings.COLOUR_LIST)
+            rand = random.randrange(0, 1)
+            if rand < (-0.25**self.level):
+                for i in range(4):
+                    pos = self._children_positions()[i]
+                    size = self._child_size()
+                    colour = random.choice(COLOUR_LIST)
+                    self.children.append(Block(pos, size, colour, self.level+1,
+                                               self.max_depth))
+                return True
             return False
 
     def swap(self, direction: int) -> bool:
@@ -240,21 +238,21 @@ class Block:
 
         Precondition: <direction> is either 0 or 1
         """
-
-        if self.children is None:
+        if len(self.children) == 0:
             pass
-        elif direction == 0:
-            for i in range(len(self.children)):
-                self.children[i].position[0], self.children[i+1].position[0] = \
-                    self.children[i+1].position[0], self.children[i].position[0]
-            return True
         elif direction == 1:
-            for i in range(len(self.children)):
-                self.children[i].position[1], self.children[i+1].position[1] = \
-                    self.children[i+1].position[1], self.children[i].position[1]
+            self.children[0].position, self.children[3].position = \
+                self.children[3].position, self.children[0].position
+            self.children[1].position, self.children[2].position = \
+                self.children[2].position, self.children[1].position
+            return True
+        else:
+            self.children[0].position, self.children[1].position = \
+                self.children[1].position, self.children[0].position
+            self.children[2].position, self.children[3].position = \
+                self.children[3].position, self.children[2].position
             return True
         return False
-
 
     def rotate(self, direction: int) -> bool:
         """Rotate this Block and all its descendants.
@@ -266,22 +264,8 @@ class Block:
 
         Precondition: <direction> is either 1 or 3.
         """
-        #fix this! NOW!
-        if self.children is []:
-            pass
-        else:
-            c = 0
-            while c < self.max_depth:
-                if direction == 1:
-                    self.swap(1)
-                    self.swap(0)
-                else:
-                    self.swap(0)
-                    self.swap(1)
-                    c += 1
-            return True
-        return False
 
+        return True
 
     def paint(self, colour: Tuple[int, int, int]) -> bool:
         """Change this Block's colour iff it is a leaf at a level of max_depth
@@ -290,12 +274,11 @@ class Block:
         Return True iff this Block's colour was changed.
         """
 
-        if self.level == self.max_depth:
+        if self.max_depth == self.level:
             if self.colour != colour:
                 self.colour = colour
                 return True
         return False
-
 
     def combine(self) -> bool:
         """Turn this Block into a leaf based on the majority colour of its
@@ -310,45 +293,53 @@ class Block:
 
         Return True iff this Block was turned into a leaf node.
         """
-        if _majority(self) is None:
+
+        if self.level != self.max_depth - 1 or len(self.children) == 0:
             pass
-        elif self.level != self.max_depth - 1:
+        elif self._majority_colour() is None:
             pass
         else:
-            self.children = []
-            self.colour = _majority(self)
-            self.max_depth = self.level
+            colour = self._majority_colour()
+            self.children, self.colour = [], colour
+            self.level = self.max_depth
             return True
         return False
 
-
-    def _majority(self) -> Optional[Tuple[int, int, int]]:
-        """Return majority colour of a block's children.
-        If there is a tie, return nothing.
-        Precondition: This block has children."""
-        dict = {}
+    def _majority_colour(self) -> Optional[Tuple[int, int, int]]:
+        """Return the majority colour of the children of this block, or return
+        False if there is no majority colour."""
+        listing = []
         for item in COLOUR_LIST:
-            dict[item] = 0
-        for child in self.children:
-            dict[colour_name(child.colour)] += 1
+            listing.append([item, 0])
 
-        other = []
-        for i in dict.values():
-            other.append(i)
+        for i in range(len(self.children)):
+            if self.children[i].colour == listing[i][0]:
+                listing[i][1] += 1
 
+        final = []
+        for i in range(len(listing)):
+            if listing[i][1] == listing[i+1][1]:
+                return None
+            else:
+                final.append(listing[i][1])
 
+        for i in final:
+            if i == max(final):
+                x = final.index(i)
+                return self.children[x].colour
 
-
-
-
-def create_copy(self) -> Block:
+    def create_copy(self) -> Block:
         """Return a new Block that is a deep copy of this Block.
 
         Remember that a deep copy has new blocks (not aliases) at every level.
         """
-        new = Block(self.position, self.size, self.colour, self.level,
-                    self.max_depth)
-        return new
+        if self.children is []:
+            return Block(self.position, self.size, self.colour, self.level,
+                              self.max_depth)
+        else:
+            for child in self.children:
+                child.create_copy()
+
 
 if __name__ == '__main__':
     import python_ta
@@ -370,3 +361,5 @@ if __name__ == '__main__':
     b2 = generate_board(3, 750)
     print("\n=== random board ===")
     print(b2)
+
+   

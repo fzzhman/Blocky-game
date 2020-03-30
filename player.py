@@ -46,10 +46,20 @@ def create_players(num_human: int, num_random: int, smart_players: List[int]) \
     objects as the length of <smart_players>. The difficulty levels in
     <smart_players> should be applied to each SmartPlayer object, in order.
     """
-    # TODO: Implement Me
-    goals = generate_goals(1)  # FIXME
-    return [HumanPlayer(0, goals[0])]  # FIXME
+    goals = generate_goals(num_random+num_human+len(smart_players))
+    final = []
 
+    for i in range(num_human):
+        final.append(HumanPlayer(i, random.choice(goals)))
+
+    for j in range(num_random):
+        final.append(RandomPlayer(j+num_human, random.choice(goals)))
+
+    for k in range(len(smart_players)):
+        final.append(SmartPlayer(k+num_human+num_random, random.choice(goals),
+                                 smart_players[k]))
+
+    return final
 
 def _get_block(block: Block, location: Tuple[int, int], level: int) -> \
         Optional[Block]:
@@ -69,8 +79,19 @@ def _get_block(block: Block, location: Tuple[int, int], level: int) -> \
     Preconditions:
         - 0 <= level <= max_depth
     """
-    # TODO: Implement me
-    return None  # FIXME
+
+    if block.position == location and block.level == level:
+        return block
+    for child in block.children:
+        if child.children is []:
+            if child.position == location and child.level <= level:
+                return child
+        else:
+            _get_block(child, location, level)
+
+    return None
+
+
 
 
 class Player:
@@ -202,6 +223,7 @@ class RandomPlayer(Player):
 
     def __init__(self, player_id: int, goal: Goal) -> None:
         # TODO: Implement Me
+        Player.__init__(self, player_id, goal)
         self._proceed = False
 
     def get_selected_block(self, board: Block) -> Optional[Block]:
